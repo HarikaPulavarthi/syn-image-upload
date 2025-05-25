@@ -1,8 +1,9 @@
 package com.synchrony.cloudinary.controller;
 
 
+import com.synchrony.cloudinary.dto.LoginRequest;
 import com.synchrony.cloudinary.entity.User;
-import com.synchrony.cloudinary.repository.UserRepository;
+import com.synchrony.cloudinary.service.UserService;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -12,6 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
+
 @Slf4j
 @RestController
 @Schema(description = "User API")
@@ -19,9 +22,11 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     @Autowired
-    private UserRepository userRepository;
+    private UserService userService;
+
     @Autowired
     private PasswordEncoder passwordEncoder;
+
 
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "User Registered"),
@@ -34,7 +39,7 @@ public class UserController {
             log.info("Username or password is empty");
             return ResponseEntity.badRequest().body(null);
         }
-        if (userRepository.findByUsername(user.getUsername()).isPresent()) {
+        if (userService.findByUsername(user.getUsername()).isPresent()) {
             log.info("Username already exists");
             return ResponseEntity.status(409).body(null);
         }
@@ -44,7 +49,8 @@ public class UserController {
         }
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         log.info("Registering user: {}", user.getUsername());
-        userRepository.save(user);
+        log.info("Encoded password: {}", user.getPassword());
+        userService.registerUser(user);
         return ResponseEntity.status(201).body(user);
     }
 
@@ -53,13 +59,60 @@ public class UserController {
             @ApiResponse(responseCode = "404", description = "User not found"),
     })
     @GetMapping("/{username}")
-    public ResponseEntity<User> getUser(@PathVariable String username) {
+    public ResponseEntity<User> getUser(@PathVariable String username, Principal principal) {
+        if (principal == null) {
+            log.info("User is not authenticated");
+            return ResponseEntity.status(401).body(null);
+        }
+        if (username == null || username.isEmpty()) {
+            log.info("Username is empty");
+            return ResponseEntity.badRequest().body(null);
+        }
+        if (!principal.getName().equals(username)) {
+            log.info("User not authorized to access this profile");
+            return ResponseEntity.status(403).body(null);
+        }
         log.info("Fetching user: {}", username);
-        User user = userRepository.findByUsername(username).orElse(null);
+        User user = userService.findByUsername(username).orElse(null);
         if (user == null) {
             log.info("User not found");
             return ResponseEntity.status(404).body(null);
         }
         return ResponseEntity.ok(user);
     }
+
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User updated"),
+            @ApiResponse(responseCode = "404", description = "User not found"),
+    })
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
+        String username = loginRequest.getUsername();
+        String password = loginRequest.getPassword();
+
+        if (username == null || username.isEmpty()) {
+            log.info("Username is empty");
+            return ResponseEntity.badRequest().body("Username is empty");
+        }
+        if (password == null || password.isEmpty()) {
+            log.info("Password is empty");
+            return ResponseEntity.badRequest().body("Password is empty");
+        }
+        log.info("Logging in user: {}", username);
+        User user = userService.findByUsername(username).orElse(null);
+        if (user == null) {
+            log.info("User not found");
+            return ResponseEntity.status(404).body("User not found");
+        }
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            log.info("Invalid password");
+            return ResponseEntity.status(401).body("Invalid password");
+        }
+        log.info("User logged in successfully: {}", username);
+        return ResponseEntity.ok(user);
+    }
+
+
+
 }
+

@@ -31,16 +31,14 @@ public class CloudinaryService {
             log.info("File is empty");
             return null;
         }
-        log.info("Uploading file: {}", file.getOriginalFilename());
         return cloudinary.uploader().upload(file.getBytes(), ObjectUtils.emptyMap());
     }
 
-    public Map deleteFile(String publicId) throws IOException {
+    public void deleteFile(String publicId) throws IOException {
         if (publicId == null || publicId.isEmpty()) {
             log.info("Public ID is empty");
-            return null;
         }
         log.info("Deleting file with public ID: {}", publicId);
-        return cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
+        cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
     }
 }

@@ -1,5 +1,6 @@
 package com.synchrony.cloudinary.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -26,6 +27,7 @@ public class Image {
     private String filename;
 
     @ManyToOne
+    @JsonIgnore
     @JoinColumn(name = "user_id")
     @Schema(description = "user who uploaded the image")
     private User user;

@@ -27,12 +27,9 @@ public class ImageService {
     @Autowired
     private UserRepository userRepository;
 
-    public Image uploadImage(MultipartFile file, Principal principal) throws IOException {
+    public Image uploadImage(MultipartFile file, User user) throws IOException {
 
         Map result = cloudinaryService.uploadFile(file);
-
-        User user = userRepository.findByUsername(principal.getName())
-                .orElseThrow(() -> new RuntimeException("User not found"));
 
         Image image = new Image();
         image.setFilename(file.getOriginalFilename());
@@ -43,29 +40,21 @@ public class ImageService {
         return imageRepository.save(image);
     }
 
-    public String deleteImage(Long imageId, Principal principal) throws IOException {
+    public String deleteImage(Long imageId) throws IOException {
         Image image = imageRepository.findById(imageId)
                 .orElseThrow(() -> new RuntimeException("Image not found"));
 
-        if (!image.getUser().getUsername().equals(principal.getName())) {
-            throw new RuntimeException("Unauthorized");
-        }
         log.info("Deleting image with ID: {}", imageId);
         cloudinaryService.deleteFile(image.getPublicId());
         imageRepository.delete(image);
         return "Image deleted successfully";
     }
 
-    public List<Image> getImagesForUser(Principal principal) {
-        if (principal == null) {
-            throw new RuntimeException("User not authenticated");
-        }
-        if (principal.getName() == null || principal.getName().isEmpty()) {
-            throw new RuntimeException("User not authenticated");
-        }
-        log.info("Fetching images for user: {}", principal.getName());
-        User user = userRepository.findByUsername(principal.getName())
+    public List<Image> getImagesForUser(String email) {
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+        log.info("Fetching images for user: {}", user.getName());
         return user.getImages();
     }
 }
+

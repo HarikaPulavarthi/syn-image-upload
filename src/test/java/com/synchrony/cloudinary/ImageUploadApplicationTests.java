@@ -1,10 +1,10 @@
-package com.synchrony.imageshack;
+package com.synchrony.cloudinary;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class ImageshackApplicationTests {
+class ImageUploadApplicationTests {
 
 	@Test
 	void contextLoads() {

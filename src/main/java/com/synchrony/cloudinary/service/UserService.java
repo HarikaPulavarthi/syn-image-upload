@@ -20,7 +20,7 @@ public class UserService {
     private PasswordEncoder passwordEncoder;
 
     public User registerUser(User user) {
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        //user.setPassword(passwordEncoder.encode(user.getPassword()));
         log.info("Registering user: {}", user.getUsername());
         return userRepository.save(user);
     }
@@ -30,9 +30,14 @@ public class UserService {
         return userRepository.findByUsername(username);
     }
 
-    public User getUserProfile(String username) {
+    public Optional<User> findByEmail(String email) {
+        log.info("Finding user by email: {}", email);
+        return userRepository.findByEmail(email);
+    }
+
+   /* public User getUserProfile(String username) {
         log.info("Fetching user profile for username: {}", username);
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-    }
+    }*/
 }
