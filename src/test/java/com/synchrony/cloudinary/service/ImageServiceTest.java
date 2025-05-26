@@ -1,9 +1,12 @@
 package com.synchrony.cloudinary.service;
 
+import com.synchrony.cloudinary.dto.ImageUploadEvent;
 import com.synchrony.cloudinary.entity.Image;
 import com.synchrony.cloudinary.entity.User;
 import com.synchrony.cloudinary.repository.ImageRepository;
 import com.synchrony.cloudinary.repository.UserRepository;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.RecordMetadata;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
@@ -11,6 +14,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -28,6 +33,9 @@ class ImageServiceTest {
 
     @InjectMocks
     private ImageService imageService;
+
+    @Mock
+    private KafkaProducer kafkaProducer;
 
     @BeforeEach
     void setUp() {
@@ -53,7 +61,7 @@ class ImageServiceTest {
         savedImage.setUser(user);
 
         when(imageRepository.save(any(Image.class))).thenReturn(savedImage);
-
+        doNothing().when(kafkaProducer).sendImageUploadEvent(any(ImageUploadEvent.class));
         Image result = imageService.uploadImage(file, user);
 
         assertNotNull(result);

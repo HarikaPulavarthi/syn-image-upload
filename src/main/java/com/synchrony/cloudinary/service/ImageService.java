@@ -1,5 +1,6 @@
 package com.synchrony.cloudinary.service;
 
+import com.synchrony.cloudinary.dto.ImageUploadEvent;
 import com.synchrony.cloudinary.entity.Image;
 import com.synchrony.cloudinary.entity.User;
 import com.synchrony.cloudinary.repository.ImageRepository;
@@ -27,6 +28,9 @@ public class ImageService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private KafkaProducer kafkaProducer;
+
     public Image uploadImage(MultipartFile file, User user) throws IOException {
 
         Map result = cloudinaryService.uploadFile(file);
@@ -36,7 +40,7 @@ public class ImageService {
         image.setPublicId((String) result.get("public_id"));
         image.setUrl((String) result.get("secure_url"));
         image.setUser(user);
-
+        kafkaProducer.sendImageUploadEvent(new ImageUploadEvent(user.getUsername(), image.getFilename()));
         return imageRepository.save(image);
     }
 
